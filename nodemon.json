@@ -1,0 +1,11 @@
+{
+  "watch": ["src", "index.js"],
+  "ext": "js,json",
+  "ignore": ["node_modules/**", "bot.log"],
+  "restartable": "rs",
+  "env": {
+    "NODE_ENV": "development"
+  },
+  "colours": true,
+  "delay": 1000
+}
