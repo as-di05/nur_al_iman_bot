@@ -1,6 +1,8 @@
 // Константы приложения
+import dotenv from 'dotenv';
+dotenv.config();
 
-export const BOT_TOKEN = "8378009940:AAGsJUg2RRhQwFaBeb2KOcuFTwiUq7Cl55U";
+export const BOT_TOKEN = process.env.BOT_TOKEN;
 
 export const API_URL = "https://muftiyat.kg/ru/api/v1/calendar/1/";
 
