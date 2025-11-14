@@ -111,8 +111,10 @@ bot.on("my_chat_member", async (ctx) => {
 // Обработка текстовых сообщений (коды городов и minutesBefore)
 bot.on("text", async (ctx) => {
   const text = ctx.message.text;
-  // Если это не команда
-  if (!text.startsWith("/")) {
+  const chatType = ctx.chat.type;
+
+  // ТОЛЬКО в личных сообщениях обрабатываем текст
+  if (chatType === "private" && !text.startsWith("/")) {
     // Сначала проверяем, ждем ли мы ввод minutesBefore
     const handled = await handleMinutesBeforeInput(ctx, setChatId);
     if (handled) return;
@@ -156,8 +158,10 @@ export async function startBot() {
 
   // Каждый день в 00:30 по Бишкеку перезагружаем расписание для всех
   cron.schedule("30 0 * * *", async () => {
-    console.log("🔄 Обновление расписания намазов (00:30)");
+    console.log("🔄 Обновление расписания намазов (00:30 Bishkek time)");
     await scheduleAllUsersNotifications(bot);
+  }, {
+    timezone: "Asia/Bishkek"
   });
 
   console.log("🚀 Запуск Telegram бота...");

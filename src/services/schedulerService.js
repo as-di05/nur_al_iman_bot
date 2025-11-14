@@ -78,6 +78,7 @@ export async function scheduleAllUsersNotifications(bot) {
 
         // Одна крон-задача отправит уведомления ВСЕМ пользователям этого города
         const task = cron.schedule(cronTime, async () => {
+          console.log(`🔔 Отправка Фаджр уведомлений (${time})...`);
           for (const user of locationUsers) {
             try {
               await sendFajrNotification(bot.telegram, user.userId, time);
@@ -91,6 +92,8 @@ export async function scheduleAllUsersNotifications(bot) {
               );
             }
           }
+        }, {
+          timezone: "Asia/Bishkek"
         });
 
         scheduledTasks.push(task);
@@ -119,6 +122,7 @@ export async function scheduleAllUsersNotifications(bot) {
 
           // Крон-задача для пользователей с одинаковым minutesBefore
           const task = cron.schedule(cronTime, async () => {
+            console.log(`🔔 Отправка ${NAMAZ_NAMES[name]} уведомлений (${time}, за ${minutes} мин)...`);
             for (const userId of userIds) {
               try {
                 await sendNamazReminder(
@@ -135,6 +139,8 @@ export async function scheduleAllUsersNotifications(bot) {
                 );
               }
             }
+          }, {
+            timezone: "Asia/Bishkek"
           });
 
           scheduledTasks.push(task);

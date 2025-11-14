@@ -171,7 +171,10 @@ export async function handleCityCode(ctx, setChatId) {
 
 // Обработчик выбора города через callback
 export async function handleLocationCallback(ctx, locationCode, setChatId) {
-  const chatId = ctx.from.id; // Для callback_query используем ctx.from.id
+  // Определяем правильный chatId в зависимости от типа чата
+  const chatType = ctx.chat?.type;
+  const chatId = chatType === "private" ? ctx.from.id : ctx.chat.id;
+
   setChatId(chatId);
   await setUserLocation(chatId, locationCode);
 
@@ -181,8 +184,20 @@ export async function handleLocationCallback(ctx, locationCode, setChatId) {
     { parse_mode: "Markdown" }
   );
 
-  // Спрашиваем за сколько минут отправлять уведомления
-  await askMinutesBefore(ctx, chatId);
+  // Спрашиваем за сколько минут ТОЛЬКО в личных чатах
+  if (chatType === "private") {
+    await askMinutesBefore(ctx, chatId);
+  } else {
+    // Для групп/каналов - сразу устанавливаем 15 минут по умолчанию и показываем расписание
+    await setUserMinutesBefore(chatId, 15);
+    await ctx.reply(
+      `✅ Настройки сохранены!\n\n` +
+      `📍 Город: ${cityName}\n` +
+      `⏰ Уведомления: за 15 минут до намаза\n\n` +
+      `Расписание будет отправлено в ${cityName === "Бишкек" || cityName === "Ош" ? "этот чат" : "чат"}.`,
+      { parse_mode: "Markdown" }
+    );
+  }
 }
 
 // Спросить пользователя за сколько минут отправлять уведомления
