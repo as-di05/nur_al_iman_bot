@@ -7,6 +7,15 @@ const userSchema = new mongoose.Schema({
     unique: true,
     index: true
   },
+  chatType: {
+    type: String,
+    enum: ['private', 'group', 'supergroup', 'channel'],
+    default: 'private'
+  },
+  chatTitle: {
+    type: String,
+    default: null
+  },
   locationCode: {
     type: Number,
     required: true

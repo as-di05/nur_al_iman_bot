@@ -87,3 +87,26 @@ export async function hasUserMinutesBefore(userId) {
     return false;
   }
 }
+
+// Регистрация канала/группы автоматически
+export async function registerChat(chatId, chatType, chatTitle, locationCode = 1, minutesBefore = 15) {
+  try {
+    await User.findOneAndUpdate(
+      { userId: chatId },
+      {
+        userId: chatId,
+        chatType,
+        chatTitle,
+        locationCode,
+        minutesBefore,
+        updatedAt: new Date()
+      },
+      { upsert: true, new: true }
+    );
+    console.log(`✅ Зарегистрирован ${chatType}: ${chatTitle} (ID: ${chatId})`);
+    return true;
+  } catch (error) {
+    console.error('Ошибка при регистрации чата:', error);
+    return false;
+  }
+}

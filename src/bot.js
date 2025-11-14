@@ -19,6 +19,7 @@ import {
   handleMaghribTest,
   handleIshaTest,
 } from "./handlers/commandHandlers.js";
+import { registerChat } from "./services/userService.js";
 
 // Инициализация бота
 const bot = new Telegraf(BOT_TOKEN);
@@ -70,6 +71,41 @@ bot.action(/^region_(.+)$/, (ctx) => {
 bot.action(/^location_(\d+)$/, (ctx) => {
   const locationCode = parseInt(ctx.match[1]);
   return handleLocationCallback(ctx, locationCode, setChatId);
+});
+
+// Обработчик добавления бота в канал/группу
+bot.on("my_chat_member", async (ctx) => {
+  const { chat, new_chat_member } = ctx.update.my_chat_member;
+  const { status } = new_chat_member;
+
+  // Если бот был добавлен как администратор или участник
+  if (status === "administrator" || status === "member") {
+    const chatId = chat.id;
+    const chatType = chat.type; // 'channel', 'group', 'supergroup'
+    const chatTitle = chat.title || chat.username || "Без названия";
+
+    console.log(`🎉 Бот добавлен в ${chatType}: ${chatTitle} (ID: ${chatId})`);
+
+    // Автоматически регистрируем канал/группу (по умолчанию Бишкек, 15 минут)
+    await registerChat(chatId, chatType, chatTitle, 1, 15);
+
+    // Отправляем приветственное сообщение
+    try {
+      await ctx.telegram.sendMessage(
+        chatId,
+        `🕌 *Ассаламу алейкум!*\n\n` +
+        `Бот для уведомлений о времени намаза успешно добавлен!\n\n` +
+        `📍 *Настройки по умолчанию:*\n` +
+        `• Город: Бишкек\n` +
+        `• Уведомления: за 15 минут до намаза\n` +
+        `• Фаджр: в точное время\n\n` +
+        `Для изменения настроек напишите администратору канала.`,
+        { parse_mode: "Markdown" }
+      );
+    } catch (error) {
+      console.error("Ошибка отправки приветствия:", error.message);
+    }
+  }
 });
 
 // Обработка текстовых сообщений (коды городов и minutesBefore)
