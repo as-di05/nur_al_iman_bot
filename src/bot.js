@@ -1,4 +1,5 @@
 // Главный файл бота
+import express from "express";
 import { Telegraf } from "telegraf";
 import cron from "node-cron";
 import { BOT_TOKEN } from "./config/constants.js";
@@ -88,6 +89,26 @@ bot.on("text", async (ctx) => {
 // Запуск бота
 export async function startBot() {
   console.log("🔄 Запуск бота...");
+
+  // Создаем HTTP сервер для Render (чтобы не было ошибки "No open ports")
+  const app = express();
+  const PORT = process.env.PORT || 3000;
+
+  app.get("/", (req, res) => {
+    res.json({
+      status: "running",
+      message: "Namaz Bot is running",
+      uptime: process.uptime()
+    });
+  });
+
+  app.get("/health", (req, res) => {
+    res.json({ status: "healthy" });
+  });
+
+  app.listen(PORT, () => {
+    console.log(`🌐 HTTP сервер запущен на порту ${PORT}`);
+  });
 
   // Подключение к MongoDB
   await connectDatabase();
