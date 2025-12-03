@@ -20,9 +20,14 @@ import {
   handleIshaTest,
 } from "./handlers/commandHandlers.js";
 import { registerChat } from "./services/userService.js";
+import { onlyOwnerInGroups } from "./middleware/adminCheck.js";
 
 // Инициализация бота
 const bot = new Telegraf(BOT_TOKEN);
+
+// Глобальный middleware - блокирует команды для всех кроме владельца в группах
+bot.use(onlyOwnerInGroups);
+
 let chatId = null;
 
 // Функция для установки chatId
