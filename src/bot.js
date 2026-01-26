@@ -19,8 +19,27 @@ import {
   handleMaghribTest,
   handleIshaTest,
 } from "./handlers/commandHandlers.js";
+import {
+  handleAdminMenu,
+  handleCreateCollection,
+  handleListCollections,
+  handleAddHadithStart,
+  handleSelectCollection,
+  handleEditHadithStart,
+  handleSearchHadithStart,
+  handleSearchSelectCollection,
+  handleHadithTextInput,
+  handleEditFieldSelect,
+  handleToggleActive,
+  handleUserHadith,
+  handleUserEnableHadith,
+  handleUserDisableHadith,
+  handleUserChangeCollection,
+  handleUserSetCollection,
+} from "./handlers/hadithHandlers.js";
 import { registerChat } from "./services/userService.js";
-import { onlyOwnerInGroups } from "./middleware/adminCheck.js";
+import { onlyOwnerInGroups, isMainAdmin } from "./middleware/adminCheck.js";
+import { scheduleHadithSending } from "./services/hadithScheduler.js";
 
 // Инициализация бота
 const bot = new Telegraf(BOT_TOKEN);
@@ -43,6 +62,12 @@ bot.command("dhuhr", handleDhuhrTest);
 bot.command("asr", handleAsrTest);
 bot.command("maghrib", handleMaghribTest);
 bot.command("isha", handleIshaTest);
+
+// Команды для хадисов (только для администратора)
+bot.command("hadith_admin", isMainAdmin, handleAdminMenu);
+
+// Команда для пользователей
+bot.command("hadith", handleUserHadith);
 
 // Обработка callback-ов (кнопок)
 bot.action("show_regions", handleShowRegions);
@@ -76,6 +101,49 @@ bot.action(/^region_(.+)$/, (ctx) => {
 bot.action(/^location_(\d+)$/, (ctx) => {
   const locationCode = parseInt(ctx.match[1]);
   return handleLocationCallback(ctx, locationCode, setChatId);
+});
+
+// ==================== CALLBACK ОБРАБОТЧИКИ ДЛЯ ХАДИСОВ ====================
+
+// Админские callback-и
+bot.action("hadith_create_collection", handleCreateCollection);
+bot.action("hadith_list_collections", handleListCollections);
+bot.action("hadith_add_start", handleAddHadithStart);
+bot.action("hadith_edit_start", handleEditHadithStart);
+bot.action("hadith_search_start", handleSearchHadithStart);
+
+// Выбор коллекции для добавления хадиса
+bot.action(/^hadith_select_col_(.+)$/, (ctx) => {
+  const collectionId = ctx.match[1];
+  return handleSelectCollection(ctx, collectionId);
+});
+
+// Выбор коллекции для поиска
+bot.action(/^hadith_search_col_(.+)$/, (ctx) => {
+  const collectionId = ctx.match[1];
+  return handleSearchSelectCollection(ctx, collectionId);
+});
+
+// Редактирование полей хадиса
+bot.action(/^hadith_edit_(number|contentRu|contentAr|narrators|explanation)$/, (ctx) => {
+  const field = ctx.match[1];
+  return handleEditFieldSelect(ctx, field);
+});
+
+bot.action("hadith_toggle_active", handleToggleActive);
+
+// Пользовательские callback-и
+bot.action(/^user_hadith_enable_(.+)$/, (ctx) => {
+  const collectionId = ctx.match[1];
+  return handleUserEnableHadith(ctx, collectionId);
+});
+
+bot.action("user_hadith_disable", handleUserDisableHadith);
+bot.action("user_hadith_change_collection", handleUserChangeCollection);
+
+bot.action(/^user_hadith_set_col_(.+)$/, (ctx) => {
+  const collectionId = ctx.match[1];
+  return handleUserSetCollection(ctx, collectionId);
 });
 
 // Обработчик добавления бота в канал/группу
@@ -113,13 +181,17 @@ bot.on("my_chat_member", async (ctx) => {
   }
 });
 
-// Обработка текстовых сообщений (коды городов и minutesBefore)
+// Обработка текстовых сообщений (коды городов, minutesBefore и хадисы)
 bot.on("text", async (ctx) => {
   const text = ctx.message.text;
   const chatType = ctx.chat.type;
 
   // ТОЛЬКО в личных сообщениях обрабатываем текст
   if (chatType === "private" && !text.startsWith("/")) {
+    // Проверяем состояния хадисов (для администратора)
+    const hadithHandled = await handleHadithTextInput(ctx);
+    if (hadithHandled) return;
+
     // Сначала проверяем, ждем ли мы ввод minutesBefore
     const handled = await handleMinutesBeforeInput(ctx, setChatId);
     if (handled) return;
@@ -168,6 +240,11 @@ export async function startBot() {
   }, {
     timezone: "Asia/Bishkek"
   });
+
+  // Запуск планировщика хадисов (ежедневно в 09:00)
+  console.log("📖 Запуск планировщика хадисов...");
+  scheduleHadithSending(bot);
+  console.log("✅ Планировщик хадисов запущен!");
 
   console.log("🚀 Запуск Telegram бота...");
   await bot.launch({
