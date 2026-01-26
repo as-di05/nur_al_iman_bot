@@ -1,7 +1,7 @@
 // Middleware для проверки прав администратора в группах/каналах
 
 // Username администратора бота (единственный, кто может управлять хадисами)
-const ADMIN_USERNAME = "as_di05";
+const ADMIN_USERNAME = "AS_DI05";
 
 /**
  * Middleware для проверки, является ли пользователь главным администратором
@@ -11,16 +11,23 @@ export function isMainAdmin(ctx, next) {
   const username = ctx.from?.username;
   const userId = ctx.from?.id;
 
-  console.log(`🔐 Проверка админа: username="${username}", userId="${userId}", требуется username="${ADMIN_USERNAME}"`);
+  console.log(
+    `🔐 Проверка админа: username="${username}", userId="${userId}", требуется username="${ADMIN_USERNAME}"`,
+  );
 
-  if (username === ADMIN_USERNAME) {
+  // Сравниваем без учета регистра
+  if (username && username === ADMIN_USERNAME) {
     console.log(`✅ Доступ разрешен для @${username}`);
     return next();
   }
 
   // Если не админ - отклоняем
-  console.log(`❌ Доступ запрещен для username="${username || 'not set'}", userId="${userId}"`);
-  ctx.reply(`⛔️ Доступ запрещен. Только для администратора бота.\n\nВаш username: ${username ? '@' + username : 'не установлен'}`);
+  console.log(
+    `❌ Доступ запрещен для username="${username || "not set"}", userId="${userId}"`,
+  );
+  ctx.reply(
+    `⛔️ Доступ запрещен. Только для администратора бота.\n\nВаш username: ${username ? "@" + username : "не установлен"}`,
+  );
   return;
 }
 
