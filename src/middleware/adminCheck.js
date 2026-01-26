@@ -9,13 +9,18 @@ const ADMIN_USERNAME = "as_di05";
  */
 export function isMainAdmin(ctx, next) {
   const username = ctx.from?.username;
+  const userId = ctx.from?.id;
+
+  console.log(`🔐 Проверка админа: username="${username}", userId="${userId}", требуется username="${ADMIN_USERNAME}"`);
 
   if (username === ADMIN_USERNAME) {
+    console.log(`✅ Доступ разрешен для @${username}`);
     return next();
   }
 
   // Если не админ - отклоняем
-  ctx.reply("⛔️ Доступ запрещен. Только для администратора бота.");
+  console.log(`❌ Доступ запрещен для username="${username || 'not set'}", userId="${userId}"`);
+  ctx.reply(`⛔️ Доступ запрещен. Только для администратора бота.\n\nВаш username: ${username ? '@' + username : 'не установлен'}`);
   return;
 }
 
@@ -33,7 +38,7 @@ export async function onlyOwnerInGroups(ctx, next) {
   }
 
   // Проверяем только команды и callback queries
-  const isCommand = ctx.message?.text?.startsWith('/');
+  const isCommand = ctx.message?.text?.startsWith("/");
   const isCallback = !!ctx.callbackQuery;
 
   if (!isCommand && !isCallback) {
@@ -42,7 +47,11 @@ export async function onlyOwnerInGroups(ctx, next) {
   }
 
   // В группах и каналах проверяем права создателя
-  if (chatType === "group" || chatType === "supergroup" || chatType === "channel") {
+  if (
+    chatType === "group" ||
+    chatType === "supergroup" ||
+    chatType === "channel"
+  ) {
     try {
       const userId = ctx.from?.id;
       if (!userId) {
@@ -60,7 +69,9 @@ export async function onlyOwnerInGroups(ctx, next) {
       // Если не создатель - игнорируем (можно добавить предупреждение)
       // Для callback query нужно ответить, чтобы убрать "часики"
       if (isCallback) {
-        await ctx.answerCbQuery("⚠️ Доступно только владельцу группы", { show_alert: true });
+        await ctx.answerCbQuery("⚠️ Доступно только владельцу группы", {
+          show_alert: true,
+        });
       }
 
       return; // Не выполняем команду

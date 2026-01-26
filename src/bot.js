@@ -20,6 +20,7 @@ import {
   handleIshaTest,
 } from "./handlers/commandHandlers.js";
 import {
+  handleAdminHelp,
   handleAdminMenu,
   handleCreateCollection,
   handleListCollections,
@@ -64,6 +65,7 @@ bot.command("maghrib", handleMaghribTest);
 bot.command("isha", handleIshaTest);
 
 // Команды для хадисов (только для администратора)
+bot.command("help_admin", isMainAdmin, handleAdminHelp);
 bot.command("hadith_admin", isMainAdmin, handleAdminMenu);
 
 // Команда для пользователей
