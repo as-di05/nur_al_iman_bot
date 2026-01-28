@@ -341,11 +341,18 @@ export async function handleHadithTextInput(ctx) {
           ],
         };
 
+        // Безопасно обрезаем текст
+        const contentPreview = hadith.contentRu
+          ? (hadith.contentRu.length > 100
+              ? hadith.contentRu.substring(0, 100) + "..."
+              : hadith.contentRu)
+          : "Не указано";
+
         await ctx.reply(
           `✏️ *Редактирование хадиса*\n\n` +
             `*Коллекция:* ${hadith.collectionId.name}\n` +
             `*Номер:* ${hadith.number}\n` +
-            `*Содержание:* ${hadith.contentRu.substring(0, 100)}...\n\n` +
+            `*Содержание:* ${contentPreview}\n\n` +
             `Выберите, что хотите изменить:`,
           { parse_mode: "Markdown", reply_markup: keyboard }
         );
@@ -547,7 +554,7 @@ export async function handleUserEnableHadith(ctx, collectionId) {
   await ctx.editMessageText(
     `✅ Хадисы включены!\n\n` +
       `📚 Коллекция: ${collection.name}\n` +
-      `⏰ Время отправки: 09:00 (ежедневно)\n\n` +
+      `⏰ Время отправки: 11:00 (ежедневно)\n\n` +
       `Завтра вы получите первый хадис!`,
     { parse_mode: "Markdown" }
   );

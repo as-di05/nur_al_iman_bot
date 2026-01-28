@@ -40,7 +40,7 @@ const userSchema = new mongoose.Schema({
   },
   hadithSendTime: {
     type: String,
-    default: "09:00",
+    default: "11:00",
     // Время отправки хадиса в формате "HH:MM"
   },
   selectedCollection: {
