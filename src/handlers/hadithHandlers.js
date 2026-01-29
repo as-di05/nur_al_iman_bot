@@ -161,7 +161,7 @@ export async function handleEditHadithStart(ctx) {
   await ctx.editMessageText(
     "✏️ *Редактирование хадиса*\n\n" +
       "Отправьте ID хадиса для редактирования\n" +
-      "(Найти ID можно через поиск: /hadith_admin)",
+      "(Найти ID можно через поиск в главном меню)",
     { parse_mode: "Markdown" }
   );
 
@@ -478,11 +478,17 @@ export async function handleToggleActive(ctx) {
  * /hadith - Управление подпиской на хадисы
  */
 export async function handleUserHadith(ctx) {
-  const userId = ctx.from.id;
+  // Для групп/каналов используем chat.id, для личных чатов - from.id
+  const chatType = ctx.chat?.type;
+  const userId = (chatType === 'private') ? ctx.from.id : ctx.chat.id;
+
   const user = await User.findOne({ userId });
 
   if (!user) {
-    await ctx.reply("⚠️ Сначала зарегистрируйтесь через /start");
+    const message = (chatType === 'private')
+      ? "⚠️ Сначала зарегистрируйтесь через /start"
+      : "⚠️ Бот еще не добавлен в эту группу/канал. Добавьте бота как администратора.";
+    await ctx.reply(message);
     return;
   }
 
@@ -501,9 +507,13 @@ export async function handleUserHadith(ctx) {
       ]),
     };
 
+    const targetText = (chatType === 'private')
+      ? "вы будете получать"
+      : "в этот чат будут приходить";
+
     await ctx.reply(
       "📖 *Ежедневные хадисы*\n\n" +
-        "Каждый день в 11:00 вы будете получать новый хадис.\n\n" +
+        `Каждый день в 11:00 ${targetText} новый хадис.\n\n` +
         "Выберите коллекцию хадисов:",
       { parse_mode: "Markdown", reply_markup: keyboard }
     );
@@ -536,10 +546,11 @@ export async function handleUserHadith(ctx) {
 }
 
 /**
- * Включение хадисов для пользователя
+ * Включение хадисов для пользователя/группы/канала
  */
 export async function handleUserEnableHadith(ctx, collectionId) {
-  const userId = ctx.from.id;
+  const chatType = ctx.chat?.type;
+  const userId = (chatType === 'private') ? ctx.from.id : ctx.chat.id;
 
   await User.findOneAndUpdate(
     { userId },
@@ -550,12 +561,13 @@ export async function handleUserEnableHadith(ctx, collectionId) {
   );
 
   const collection = await hadithService.getCollectionById(collectionId);
+  const targetText = (chatType === 'private') ? "вы получите" : "придет";
 
   await ctx.editMessageText(
     `✅ Хадисы включены!\n\n` +
       `📚 Коллекция: ${collection.name}\n` +
       `⏰ Время отправки: 11:00 (ежедневно)\n\n` +
-      `Завтра вы получите первый хадис!`,
+      `Завтра ${targetText} первый хадис!`,
     { parse_mode: "Markdown" }
   );
 }
@@ -564,7 +576,8 @@ export async function handleUserEnableHadith(ctx, collectionId) {
  * Отключение хадисов
  */
 export async function handleUserDisableHadith(ctx) {
-  const userId = ctx.from.id;
+  const chatType = ctx.chat?.type;
+  const userId = (chatType === 'private') ? ctx.from.id : ctx.chat.id;
 
   await User.findOneAndUpdate({ userId }, { hadithsEnabled: false });
 
@@ -593,7 +606,8 @@ export async function handleUserChangeCollection(ctx) {
  * Установка новой коллекции
  */
 export async function handleUserSetCollection(ctx, collectionId) {
-  const userId = ctx.from.id;
+  const chatType = ctx.chat?.type;
+  const userId = (chatType === 'private') ? ctx.from.id : ctx.chat.id;
 
   await User.findOneAndUpdate(
     { userId },
