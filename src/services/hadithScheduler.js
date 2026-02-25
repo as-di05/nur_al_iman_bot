@@ -34,7 +34,7 @@ async function sendHadithsToAllUsers(telegram) {
 
     for (const user of users) {
       try {
-        const hadith = await hadithService.getNextHadithForUser(user.userId);
+        let hadith = await hadithService.getNextHadithForUser(user.userId);
 
         if (!hadith) {
           console.log(
@@ -44,8 +44,42 @@ async function sendHadithsToAllUsers(telegram) {
         }
 
         const collection = user.selectedCollection;
-        const message = hadithService.formatHadithMessage(hadith, collection);
+        let message = hadithService.formatHadithMessage(hadith, collection);
 
+        // Проверяем длину сообщения (лимит Telegram 4096 символов)
+        const MAX_LENGTH = 4096;
+        let attempts = 0;
+        const MAX_ATTEMPTS = 10; // Максимум попыток найти подходящий хадис
+
+        while (message.length > MAX_LENGTH && attempts < MAX_ATTEMPTS) {
+          console.log(
+            `⚠️ Хадис №${hadith.number} слишком длинный (${message.length} символов), пропускаем и берем следующий`
+          );
+
+          // Помечаем длинный хадис как отправленный (чтобы пропустить)
+          await hadithService.markHadithAsSent(user.userId, hadith._id);
+
+          // Получаем следующий хадис
+          hadith = await hadithService.getNextHadithForUser(user.userId);
+
+          if (!hadith) {
+            console.log(`⚠️ Закончились хадисы для пользователя ${user.userId}`);
+            break;
+          }
+
+          message = hadithService.formatHadithMessage(hadith, collection);
+          attempts++;
+        }
+
+        // Если не нашли подходящий хадис после MAX_ATTEMPTS попыток
+        if (!hadith || message.length > MAX_LENGTH) {
+          console.log(
+            `⚠️ Не удалось найти хадис подходящей длины для пользователя ${user.userId}`
+          );
+          continue;
+        }
+
+        // Отправляем хадис
         await telegram.sendMessage(user.userId, message, {
           parse_mode: "Markdown",
         });
@@ -55,7 +89,7 @@ async function sendHadithsToAllUsers(telegram) {
 
         successCount++;
         console.log(
-          `✅ Хадис №${hadith.number} отправлен пользователю ${user.userId}`
+          `✅ Хадис №${hadith.number} отправлен пользователю ${user.userId} (${message.length} символов)`
         );
 
         // Небольшая задержка между отправками (чтобы не упереться в лимиты Telegram)
@@ -66,6 +100,7 @@ async function sendHadithsToAllUsers(telegram) {
           `❌ Ошибка отправки хадиса пользователю ${user.userId}:`,
           error.message
         );
+        // Не падаем, продолжаем отправку другим пользователям
       }
     }
 
