@@ -1,5 +1,5 @@
 // Константы приложения
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
 dotenv.config();
 
 export const BOT_TOKEN = process.env.BOT_TOKEN;
@@ -7,11 +7,11 @@ export const BOT_TOKEN = process.env.BOT_TOKEN;
 export const API_URL = "https://muftiyat.kg/ru/api/v1/calendar/1/";
 
 export const NAMAZ_NAMES = {
-  fajr: "Фаджр (Утренний)",
-  dhuhr: "Зухр (Обеденный)",
-  asr: "Аср (Послеполуденный)",
-  maghrib: "Магриб (Вечерний)",
-  isha: "Иша (Ночной)",
+  fajr: "Фаджр",
+  dhuhr: "Зухр",
+  asr: "Аср",
+  maghrib: "Магриб",
+  isha: "Иша",
 };
 
 export const NAMAZ_MINUTES_BEFORE = {
