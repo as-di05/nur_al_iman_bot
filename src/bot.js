@@ -259,11 +259,11 @@ export async function startBot() {
 
   // Устанавливаем список команд для автокомплита
   await bot.telegram.setMyCommands([
-    { command: "start", description: "🚀 Начать работу с ботом" },
-    { command: "location", description: "📍 Изменить город" },
-    { command: "hadith", description: "📖 Управление хадисами" },
-    { command: "hadith_admin", description: "⚙️ Админ панель хадисов" },
-    { command: "help_admin", description: "❓ Справка администратора" },
+    { command: "start", description: "Начать работу с ботом" },
+    { command: "location", description: "Изменить город" },
+    { command: "hadith", description: "Управление хадисами" },
+    { command: "hadith_admin", description: "Админ панель хадисов" },
+    { command: "help_admin", description: "Справка администратора" },
   ]);
   console.log("📋 Команды бота установлены!");
 

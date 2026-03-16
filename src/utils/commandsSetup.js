@@ -1,15 +1,15 @@
 // Настройка списка команд для разных типов пользователей
 
 const USER_COMMANDS = [
-  { command: "start", description: "🚀 Начать работу с ботом" },
-  { command: "location", description: "📍 Изменить город" },
-  { command: "hadith", description: "📖 Управление хадисами" },
+  { command: "start", description: "Начать работу с ботом" },
+  { command: "location", description: "Изменить город" },
+  { command: "hadith", description: "Управление хадисами" },
 ];
 
 const ADMIN_COMMANDS = [
   ...USER_COMMANDS,
-  { command: "hadith_admin", description: "⚙️ Админ панель хадисов" },
-  { command: "help_admin", description: "❓ Справка администратора" },
+  { command: "hadith_admin", description: "Админ панель хадисов" },
+  { command: "help_admin", description: "Справка администратора" },
 ];
 
 /**
