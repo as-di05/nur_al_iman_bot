@@ -89,7 +89,7 @@ bot.action("back_to_main", async (ctx) => {
           [{ text: "📍 Другие города", callback_data: "show_regions" }],
         ],
       },
-    }
+    },
   );
 });
 
@@ -127,10 +127,13 @@ bot.action(/^hadith_search_col_(.+)$/, (ctx) => {
 });
 
 // Редактирование полей хадиса
-bot.action(/^hadith_edit_(number|contentRu|contentAr|narrators|explanation)$/, (ctx) => {
-  const field = ctx.match[1];
-  return handleEditFieldSelect(ctx, field);
-});
+bot.action(
+  /^hadith_edit_(number|contentRu|contentAr|narrators|explanation)$/,
+  (ctx) => {
+    const field = ctx.match[1];
+    return handleEditFieldSelect(ctx, field);
+  },
+);
 
 bot.action("hadith_toggle_active", handleToggleActive);
 
@@ -169,13 +172,13 @@ bot.on("my_chat_member", async (ctx) => {
       await ctx.telegram.sendMessage(
         chatId,
         `🕌 *Ассаламу алейкум!*\n\n` +
-        `Бот для уведомлений о времени намаза успешно добавлен!\n\n` +
-        `📍 *Настройки по умолчанию:*\n` +
-        `• Город: Бишкек\n` +
-        `• Уведомления: за 15 минут до намаза\n` +
-        `• Фаджр: в точное время\n\n` +
-        `Для изменения настроек напишите администратору канала.`,
-        { parse_mode: "Markdown" }
+          `Бот для уведомлений о времени намаза успешно добавлен!\n\n` +
+          `📍 *Настройки по умолчанию:*\n` +
+          `• Город: Бишкек\n` +
+          `• Уведомления: за 15 минут до намаза\n` +
+          `• Фаджр: в точное время\n\n` +
+          `Для изменения настроек напишите администратору канала.`,
+        { parse_mode: "Markdown" },
       );
     } catch (error) {
       console.error("Ошибка отправки приветствия:", error.message);
@@ -215,7 +218,7 @@ export async function startBot() {
     res.json({
       status: "running",
       message: "Namaz Bot is running",
-      uptime: process.uptime()
+      uptime: process.uptime(),
     });
   });
 
@@ -236,12 +239,16 @@ export async function startBot() {
   console.log("✅ Расписание загружено!");
 
   // Каждый день в 00:30 по Бишкеку перезагружаем расписание для всех
-  cron.schedule("30 0 * * *", async () => {
-    console.log("🔄 Обновление расписания намазов (00:30 Bishkek time)");
-    await scheduleAllUsersNotifications(bot);
-  }, {
-    timezone: "Asia/Bishkek"
-  });
+  cron.schedule(
+    "30 0 * * *",
+    async () => {
+      console.log("🔄 Обновление расписания намазов (00:30 Bishkek time)");
+      await scheduleAllUsersNotifications(bot);
+    },
+    {
+      timezone: "Asia/Bishkek",
+    },
+  );
 
   // Запуск планировщика хадисов (ежедневно в 09:00)
   console.log("📖 Запуск планировщика хадисов...");
@@ -249,6 +256,17 @@ export async function startBot() {
   console.log("✅ Планировщик хадисов запущен!");
 
   console.log("🚀 Запуск Telegram бота...");
+
+  // Устанавливаем список команд для автокомплита
+  await bot.telegram.setMyCommands([
+    { command: "start", description: "🚀 Начать работу с ботом" },
+    { command: "location", description: "📍 Изменить город" },
+    { command: "hadith", description: "📖 Управление хадисами" },
+    { command: "hadith_admin", description: "⚙️ Админ панель хадисов" },
+    { command: "help_admin", description: "❓ Справка администратора" },
+  ]);
+  console.log("📋 Команды бота установлены!");
+
   await bot.launch({
     dropPendingUpdates: true,
   });
