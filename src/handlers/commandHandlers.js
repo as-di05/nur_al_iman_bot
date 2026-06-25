@@ -17,6 +17,7 @@ import {
   hasUserMinutesBefore,
   getUser,
 } from "../services/userService.js";
+import { logger } from "../utils/logger.js";
 
 // Временное хранилище для состояния пользователя (ожидание ввода minutesBefore)
 const userStates = new Map();
@@ -25,7 +26,7 @@ const userStates = new Map();
 export async function handleStart(ctx, setChatId) {
   const chatId = ctx.chat.id;
   setChatId(chatId);
-  console.log(`✅ Бот активирован для chatId: ${chatId}`);
+  logger.info(`✅ Бот активирован для chatId: ${chatId}`);
 
   // Если у пользователя нет сохраненного местоположения, показываем выбор
   if (!(await hasUserLocation(chatId))) {
@@ -63,7 +64,18 @@ async function showSchedule(ctx, chatId) {
   const locationCode = user?.locationCode || 1;
   const minutesBefore = user?.minutesBefore || 15;
   const cityName = getCityName(locationCode);
-  const times = await getPrayerTimes(locationCode);
+
+  let times;
+  try {
+    times = await getPrayerTimes(locationCode);
+  } catch (error) {
+    await ctx.reply(
+      `⚠️ Не удалось получить расписание намазов прямо сейчас. ` +
+        `Попробуйте позже — уведомления продолжат приходить по расписанию.`,
+    );
+    return;
+  }
+
   const today = new Date().toLocaleDateString("ru-RU", {
     day: "numeric",
     month: "long",

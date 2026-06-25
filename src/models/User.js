@@ -26,6 +26,11 @@ const userSchema = new mongoose.Schema({
     min: 0,
     max: 120
   },
+  // Активна ли подписка. Ставится в false, если бот заблокирован/чат недоступен
+  isActive: {
+    type: Boolean,
+    default: true
+  },
   // Настройки для хадисов
   hadithsEnabled: {
     type: Boolean,

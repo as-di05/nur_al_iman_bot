@@ -1,17 +1,19 @@
 // Сервис для работы с пользователями
 import { User } from '../models/User.js';
+import { logger } from '../utils/logger.js';
+import { NOTIFICATIONS } from '../config/constants.js';
 
 // Установить местоположение пользователя
 export async function setUserLocation(userId, locationCode) {
   try {
     await User.findOneAndUpdate(
       { userId },
-      { locationCode, updatedAt: new Date() },
+      { locationCode, isActive: true, updatedAt: new Date() },
       { upsert: true, new: true }
     );
-    console.log(`✅ Сохранено: пользователь ${userId} выбрал локацию ${locationCode}`);
+    logger.info(`✅ Сохранено: пользователь ${userId} выбрал локацию ${locationCode}`);
   } catch (error) {
-    console.error('Ошибка при сохранении пользователя:', error);
+    logger.error('Ошибка при сохранении пользователя:', error.message);
   }
 }
 
@@ -20,12 +22,12 @@ export async function setUserMinutesBefore(userId, minutesBefore) {
   try {
     await User.findOneAndUpdate(
       { userId },
-      { minutesBefore, updatedAt: new Date() },
+      { minutesBefore, isActive: true, updatedAt: new Date() },
       { upsert: true, new: true }
     );
-    console.log(`✅ Сохранено: пользователь ${userId} выбрал уведомление за ${minutesBefore} минут`);
+    logger.info(`✅ Сохранено: пользователь ${userId} выбрал уведомление за ${minutesBefore} минут`);
   } catch (error) {
-    console.error('Ошибка при сохранении времени уведомления:', error);
+    logger.error('Ошибка при сохранении времени уведомления:', error.message);
   }
 }
 
@@ -35,7 +37,7 @@ export async function getUserLocation(userId) {
     const user = await User.findOne({ userId });
     return user?.locationCode || 1; // По умолчанию Бишкек
   } catch (error) {
-    console.error('Ошибка при получении пользователя:', error);
+    logger.error('Ошибка при получении пользователя:', error.message);
     return 1;
   }
 }
@@ -46,22 +48,23 @@ export async function hasUserLocation(userId) {
     const user = await User.findOne({ userId });
     return user?.locationCode !== undefined;
   } catch (error) {
-    console.error('Ошибка при проверке пользователя:', error);
+    logger.error('Ошибка при проверке пользователя:', error.message);
     return false;
   }
 }
 
 // Получить всех активных пользователей
+// Фильтр { $ne: false } включает и старые записи без поля isActive
 export async function getAllActiveUsers() {
   try {
-    const users = await User.find({});
+    const users = await User.find({ isActive: { $ne: false } });
     return users.map(user => ({
       userId: user.userId,
       locationCode: user.locationCode,
-      minutesBefore: user.minutesBefore || 15
+      minutesBefore: user.minutesBefore || NOTIFICATIONS.defaultMinutesBefore
     }));
   } catch (error) {
-    console.error('Ошибка при получении всех пользователей:', error);
+    logger.error('Ошибка при получении всех пользователей:', error.message);
     return [];
   }
 }
@@ -72,7 +75,7 @@ export async function getUser(userId) {
     const user = await User.findOne({ userId });
     return user;
   } catch (error) {
-    console.error('Ошибка при получении пользователя:', error);
+    logger.error('Ошибка при получении пользователя:', error.message);
     return null;
   }
 }
@@ -83,13 +86,23 @@ export async function hasUserMinutesBefore(userId) {
     const user = await User.findOne({ userId });
     return user?.minutesBefore !== undefined;
   } catch (error) {
-    console.error('Ошибка при проверке настройки пользователя:', error);
+    logger.error('Ошибка при проверке настройки пользователя:', error.message);
     return false;
   }
 }
 
+// Деактивировать пользователя (бот заблокирован или чат недоступен)
+export async function deactivateUser(userId) {
+  try {
+    await User.updateOne({ userId }, { isActive: false });
+    logger.warn(`🚫 Пользователь ${userId} деактивирован (бот заблокирован/чат недоступен)`);
+  } catch (error) {
+    logger.error('Ошибка при деактивации пользователя:', error.message);
+  }
+}
+
 // Регистрация канала/группы автоматически
-export async function registerChat(chatId, chatType, chatTitle, locationCode = 1, minutesBefore = 15) {
+export async function registerChat(chatId, chatType, chatTitle, locationCode = 1, minutesBefore = NOTIFICATIONS.defaultMinutesBefore) {
   try {
     await User.findOneAndUpdate(
       { userId: chatId },
@@ -99,14 +112,15 @@ export async function registerChat(chatId, chatType, chatTitle, locationCode = 1
         chatTitle,
         locationCode,
         minutesBefore,
+        isActive: true,
         updatedAt: new Date()
       },
       { upsert: true, new: true }
     );
-    console.log(`✅ Зарегистрирован ${chatType}: ${chatTitle} (ID: ${chatId})`);
+    logger.info(`✅ Зарегистрирован ${chatType}: ${chatTitle} (ID: ${chatId})`);
     return true;
   } catch (error) {
-    console.error('Ошибка при регистрации чата:', error);
+    logger.error('Ошибка при регистрации чата:', error.message);
     return false;
   }
 }

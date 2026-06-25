@@ -1,4 +1,5 @@
 // Middleware для проверки прав администратора в группах/каналах
+import { logger } from "../utils/logger.js";
 
 // Username администратора бота (единственный, кто может управлять хадисами)
 const ADMIN_USERNAME = "AS_DI05";
@@ -11,18 +12,18 @@ export function isMainAdmin(ctx, next) {
   const username = ctx.from?.username;
   const userId = ctx.from?.id;
 
-  console.log(
+  logger.debug(
     `🔐 Проверка админа: username="${username}", userId="${userId}", требуется username="${ADMIN_USERNAME}"`,
   );
 
   // Сравниваем без учета регистра
   if (username && username === ADMIN_USERNAME) {
-    console.log(`✅ Доступ разрешен для @${username}`);
+    logger.debug(`✅ Доступ разрешен для @${username}`);
     return next();
   }
 
   // Если не админ - отклоняем
-  console.log(
+  logger.warn(
     `❌ Доступ запрещен для username="${username || "not set"}", userId="${userId}"`,
   );
   ctx.reply(
@@ -83,7 +84,7 @@ export async function onlyOwnerInGroups(ctx, next) {
 
       return; // Не выполняем команду
     } catch (error) {
-      console.error("Ошибка проверки прав владельца:", error.message);
+      logger.error("Ошибка проверки прав владельца:", error.message);
     }
     return;
   }

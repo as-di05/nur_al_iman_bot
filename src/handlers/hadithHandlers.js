@@ -5,6 +5,12 @@ import * as hadithService from "../services/hadithService.js";
 // Хранилище состояний для пошагового ввода (userId -> state)
 const userStates = new Map();
 
+// Валидатор номера хадиса: целое число или составной формат "5/123"
+const HADITH_NUMBER_REGEX = /^\d+(\/\d+)?$/;
+function isValidHadithNumber(text) {
+  return HADITH_NUMBER_REGEX.test((text || "").trim());
+}
+
 // ==================== АДМИН КОМАНДЫ ====================
 
 /**
@@ -21,6 +27,13 @@ export async function handleAdminHelp(ctx) {
   • Редактировать хадис
   • Поиск хадиса
   • Список коллекций
+
+*Управление дуа:*
+/dua_admin - Панель управления дуа
+  • Создать раздел
+  • Добавить дуа
+  • Редактировать дуа
+  • Список разделов
 
 *Тестовые команды намазов:*
 /fajr - Тест уведомления Фаджр
@@ -155,6 +168,51 @@ export async function handleSelectCollection(ctx, collectionId) {
 }
 
 /**
+ * Кнопка "➕ Добавить ещё" — снова запросить номер хадиса для той же коллекции
+ */
+export async function handleAddMoreHadith(ctx, collectionId) {
+  const collection = await hadithService.getCollectionById(collectionId);
+
+  if (!collection) {
+    await ctx.answerCbQuery("❌ Коллекция не найдена");
+    return;
+  }
+
+  await ctx.answerCbQuery();
+  // Убираем кнопки у предыдущего сообщения, чтобы не нажали повторно
+  try {
+    await ctx.editMessageReplyMarkup();
+  } catch {
+    // сообщение могло быть уже изменено — игнорируем
+  }
+
+  await ctx.reply(
+    `📖 *Добавление хадиса в: ${collection.name}*\n\n` +
+      "Отправьте номер хадиса (например: 1, 234, 5/123)",
+    { parse_mode: "Markdown" }
+  );
+
+  userStates.set(ctx.from.id, {
+    action: "add_hadith",
+    step: "number",
+    collectionId: collectionId,
+    collectionName: collection.name,
+  });
+}
+
+/**
+ * Кнопка "✅ Готово" — завершить добавление хадисов
+ */
+export async function handleAddHadithDone(ctx) {
+  await ctx.answerCbQuery("Готово");
+  try {
+    await ctx.editMessageReplyMarkup();
+  } catch {
+    // нечего убирать — игнорируем
+  }
+}
+
+/**
  * Начало редактирования хадиса
  */
 export async function handleEditHadithStart(ctx) {
@@ -250,12 +308,21 @@ export async function handleHadithTextInput(ctx) {
   // ========== ДОБАВЛЕНИЕ ХАДИСА ==========
   if (state.action === "add_hadith") {
     if (state.step === "number") {
-      state.number = text;
+      if (!isValidHadithNumber(text)) {
+        await ctx.reply(
+          "❌ Номер хадиса должен быть числом (например: 1, 234 или 5/123).\n\n" +
+            "Отправьте номер ещё раз:"
+        );
+        return true; // Остаёмся на шаге ввода номера
+      }
+
+      const number = text.trim();
+      state.number = number;
       state.step = "content";
       userStates.set(userId, state);
 
       await ctx.reply(
-        `📖 Номер хадиса: *${text}*\n\n` +
+        `📖 Номер хадиса: *${number}*\n\n` +
           "Теперь отправьте содержание хадиса на русском языке:",
         { parse_mode: "Markdown" }
       );
@@ -270,6 +337,18 @@ export async function handleHadithTextInput(ctx) {
           text
         );
 
+        const keyboard = {
+          inline_keyboard: [
+            [
+              { text: "✅ Готово", callback_data: "hadith_add_done" },
+              {
+                text: "➕ Добавить ещё",
+                callback_data: `hadith_add_more_${state.collectionId}`,
+              },
+            ],
+          ],
+        };
+
         await ctx.reply(
           `✅ Хадис добавлен в коллекцию "*${state.collectionName}*"!\n\n` +
             `*Номер:* ${hadith.number}\n` +
@@ -278,7 +357,7 @@ export async function handleHadithTextInput(ctx) {
             `• Арабский текст\n` +
             `• Передатчиков\n` +
             `• Разъяснения ученых`,
-          { parse_mode: "Markdown" }
+          { parse_mode: "Markdown", reply_markup: keyboard }
         );
 
         userStates.delete(userId);
@@ -379,10 +458,18 @@ export async function handleHadithTextInput(ctx) {
   // ========== ПОИСК ХАДИСА ==========
   if (state.action === "search_hadith") {
     if (state.step === "number") {
+      if (!isValidHadithNumber(text)) {
+        await ctx.reply(
+          "❌ Номер хадиса должен быть числом (например: 1, 234 или 5/123).\n\n" +
+            "Отправьте номер ещё раз:"
+        );
+        return true; // Остаёмся на шаге ввода номера
+      }
+
       try {
         const hadith = await hadithService.findHadithByNumber(
           state.collectionId,
-          text
+          text.trim()
         );
 
         if (!hadith) {

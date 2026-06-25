@@ -1,4 +1,5 @@
 // Настройка списка команд для разных типов пользователей
+import { logger } from "./logger.js";
 
 const USER_COMMANDS = [
   { command: "start", description: "Начать работу с ботом" },
@@ -34,7 +35,7 @@ export async function setCommandsForUser(bot, userId, isAdmin) {
  */
 export async function setDefaultCommands(bot) {
   await bot.telegram.setMyCommands(USER_COMMANDS);
-  console.log("📋 Команды бота установлены!");
+  logger.info("📋 Команды бота установлены!");
 }
 
 /**
@@ -48,8 +49,8 @@ export async function setupAdminCommands(bot, adminUserId = 793289094) {
         chat_id: adminUserId,
       },
     });
-    console.log("👑 Админские команды установлены!");
+    logger.info("👑 Админские команды установлены!");
   } catch (error) {
-    console.log("⚠️ Не удалось установить админские команды:", error.message);
+    logger.warn("⚠️ Не удалось установить админские команды:", error.message);
   }
 }

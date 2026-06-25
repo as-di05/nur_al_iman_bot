@@ -200,9 +200,10 @@ export async function markHadithAsSent(userId, hadithId) {
  * Получить всех пользователей с включенными хадисами
  */
 export async function getUsersWithHadithsEnabled() {
-  return await User.find({ hadithsEnabled: true }).populate(
-    "selectedCollection"
-  );
+  return await User.find({
+    hadithsEnabled: true,
+    isActive: { $ne: false },
+  }).populate("selectedCollection");
 }
 
 /**
