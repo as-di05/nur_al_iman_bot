@@ -150,7 +150,7 @@ export function formatDuaMessage(dua, collection, position = null) {
   }
   message += `\n${dua.contentAr}\n`;
 
-  message += `\n📝 _Транскрипция:_\n${dua.transcription}\n`;
+  message += `\n📝 _Транскрипция:_\n*${dua.transcription}*\n`;
 
   message += `\n💬 _Перевод:_\n${dua.translationRu}\n`;
 
